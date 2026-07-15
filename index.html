@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bengal Upscaler - Premium AI Image Processor</title>
+    <!-- গুগল ফন্ট এবং প্রফেশনাল আইকন সিডিএন -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --panel-bg: rgba(20, 30, 54, 0.6);
+            --accent-blue: #00d2ff;
+            --accent-purple: #0066ff;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-glow: rgba(0, 210, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 102, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 210, 255, 0.1) 0%, transparent 40%);
+            color: var(--text-main);
+            font-family: 'Inter', 'Hind Siliguri', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 40px 20px;
+        }
+
+        /* হেডার স্টাইল */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 30%, var(--accent-blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 210, 255, 0.2);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* মেইন লেআউট গ্রিড */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+            align-items: start;
+        }
+
+        @media (max-width: 968px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* বাম পাশের প্যানেল: এআই প্রসেসর */
+        .processor-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .processor-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(0, 210, 255, 0.3);
+            background: rgba(9, 13, 22, 0.6);
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-bottom: 25px;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 20px var(--border-glow);
+            background: rgba(9, 13, 22, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .upload-zone i {
+            font-size: 3.5rem;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+        }
+
+        .upload-zone p {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .upload-zone span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: block;
+            margin-top: 8px;
+        }
+
+        #imageInput { display: none; }
+
+        .preview-container {
+            position: relative;
+            display: none;
+            margin-top: 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .preview-img {
+            width: 100%;
+            display: block;
+            max-height: 300px;
+            object-fit: contain;
+            background: #05070c;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: block;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .flex-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(9, 13, 22, 0.6);
+            padding: 10px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex: 1;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+            margin-right: 10px;
+        }
+
+        select {
+            background: rgba(9, 13, 22, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 15px;
+            border-radius: 12px;
+            outline: none;
+            cursor: pointer;
+            flex: 1;
+            font-size: 0.95rem;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+            border: none;
+            padding: 16px;
+            width: 100%;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 210, 255, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .action-btn:disabled {
+            background: #334155;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* মেগা আধুনিক লোডার */
+        .premium-loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 210, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 210, 255, 0.1);
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(0, 210, 255, 0.1);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ডান পাশের প্যানেল: নমুনা ছবি শ্যূকেস (Before/After Slider) */
+        .showcase-card {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .showcase-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .showcase-card h3 i { color: var(--accent-blue); }
+
+        /* স্লাইডার আর্কিটেকচার */
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .slider-img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        .img-before {
+            z-index: 1;
+        }
+
+        .img-after {
+            z-index: 2;
+            /* ডিফল্ট ক্রপ রেঞ্জ ৫০% এ থাকবে */
+            clip-path: inset(0 0 0 50%); 
+        }
+
+        .slider-handle {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%; width: 4px;
+            background: #fff;
+            z-index: 3;
+            cursor: ew-resize;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .slider-button {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            color: #0f172a;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .range-bar {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: ew-resize;
+            z-index: 4;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            top: 15px; left: 15px; right: 15px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .badge {
+            background: rgba(9, 13, 22, 0.7);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .badge.before { color: #ef4444; }
+        .badge.after { color: #22c55e; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Bengal Upscaler</h1>
+        <p>অত্যাধুনিক নিউরাল নেটওয়ার্ক প্রযুক্তিতে এক ক্লিকেই যেকোনো ছবির ব্যাকগ্রাউন্ড নিখুঁতভাবে রিমুভ করুন এবং ইমেজ কোয়ালিটি ২x (Ultra HD) ক্রিস্টাল ক্লিয়ার করে তুলুন।</p>
+    </header>
+
+    <div class="main-layout">
+        
+        <!-- বাম পাশ: এআই ইঞ্জিন ইন্টিগ্রেশন -->
+        <div class="processor-card">
+            <div class="upload-zone" onclick="document.getElementById('imageInput').click()">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <p id="uploadText">এখানে আপনার ছবি ড্রপ করুন অথবা ব্রাউজ করুন</p>
+                <span>PNG, JPEG, JPG (সর্বোচ্চ ১০ এমবি)</span>
+                <input type="file" id="imageInput" accept="image/*" onchange="previewFile()">
+                
+                <div class="preview-container" id="previewContainer">
+                    <img id="preview" class="preview-img" src="" alt="Preview">
+                </div>
+            </div>
+
+            <div class="flex-options">
+                <div class="control-group" style="flex: 1;">
+                    <span class="control-label">ব্যাকগ্রাউন্ড কালার</span>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="bgColor" value="#FFFFFF">
+                        <span style="font-size: 0.9rem; color: #cbd5e1;">পছন্দ করুন</span>
+                    </div>
+                </div>
+                
+                <div class="control-group" style="flex: 1;">
+                    <span class="control-label">আউটপুট ফরম্যাট</span>
+                    <select id="format">
+                        <option value="PNG">PNG (HD Transparent)</option>
+                        <option value="JPEG">JPEG (Standard)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="action-btn" id="processBtn" onclick="processImage()">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> প্রসেস শুরু করুন
+            </button>
+            
+            <div class="premium-loader" id="loader">
+                <div class="spinner"></div>
+                <span style="color: var(--accent-blue); font-weight: 600;">আর্টিফিশিয়াল ইন্টেলিজেন্স ছবি প্রসেস করছে...</span>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">অনুগ্রহ করে ২০-৩০ সেকেন্ড অপেক্ষা করুন।</p>
+            </div>
+        </div>
+
+        <!-- ডান পাশ: নমুনা গ্যালারি স্লাইডার -->
+        <div class="showcase-card">
+            <h3><i class="fa-solid fa-images"></i> লাইভ এআই ডেমো (নমুনা)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">নিচের স্লাইডারটির হ্যান্ডেলটি ডানে-বামে টেনে এআই-এর ম্যাজিক দেখুন। ঝাপসা ব্যাকগ্রাউন্ড সরিয়ে কিভাবে আল্ট্রা এইচডি ডিটেইলস নিয়ে আসে:</p>
+            
+            <div class="slider-container">
+                <div class="badges">
+                    <span class="badge before">আগে (Low Res)</span>
+                    <span class="badge after">পরে (Bengal AI 4K)</span>
+                </div>
+                
+                <!-- নমুনা ছবি (পিক্সেল আর্ট ও নরমাল ব্লার ছবির ডেমো টেক্সচার) -->
+                <img class="slider-img img-before" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=10" alt="Before AI">
+                <img class="slider-img img-after" id="afterImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=100" style="background-color: #ffffff;" alt="After AI">
+                
+                <div class="slider-handle" id="handle">
+                    <div class="slider-button">
+                        <i class="fa-solid fa-left-right"></i>
+                    </div>
+                </div>
+                
+                <input type="range" min="0" max="100" value="50" class="range-bar" id="rangeInput" oninput="slideDemo()">
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // নমুনা ডেমো স্লাইডার কন্ট্রোল করার ফাংশন
+        function slideDemo() {
+            const rangeValue = document.getElementById('rangeInput').value;
+            const afterImg = document.getElementById('afterImg');
+            const handle = document.getElementById('handle');
+            
+            afterImg.style.clipPath = `inset(0 0 0 ${rangeValue}%)`;
+            handle.style.left = `${rangeValue}%`;
+        }
+
+        // ছবি সিলেক্ট করলে প্রিভিউ দেখানোর ফাংশন
+        function previewFile() {
+            const preview = document.getElementById('preview');
+            const container = document.getElementById('previewContainer');
+            const file = document.getElementById('imageInput').files[0];
+            const uploadText = document.getElementById('uploadText');
+            const reader = new FileReader();
+
+            reader.onloadend = function () {
+                preview.src = reader.result;
+                container.style.display = "block";
+                uploadText.style.display = "none";
+            }
+
+            if (file) { reader.readAsDataURL(file); } 
+            else { preview.src = ""; }
+        }
+
+        // মেইন রেন্ডার ব্যাকএন্ড এপিআই প্রসেসিং ফাংশন
+        async function processImage() {
+            const imageInput = document.getElementById('imageInput').files[0];
+            const bgColor = document.getElementById('bgColor').value;
+            const format = document.getElementById('format').value;
+            const processBtn = document.getElementById('processBtn');
+            const loader = document.getElementById('loader');
+
+            if (!imageInput) {
+                alert("দয়া করে প্রসেস করার জন্য প্রথমে একটি ছবি আপলোড করুন!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", imageInput);
+            formData.append("bg_color", bgColor);
+            formData.append("output_format", format);
+
+            processBtn.disabled = true;
+            loader.style.display = "block";
+
+            try {
+                // আপনার লাইভ রেন্ডার অ্যাপের সাথে কানেক্ট করা হয়েছে
+                const response = await fetch('https://ai-image-processor-api.onrender.com/process-image/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('সার্ভার থেকে সঠিক রেসপন্স পাওয়া যায়নি।');
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `bengal_upscaled_${Date.now()}.${format.toLowerCase()}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+            } catch (error) {
+                alert("দুঃখিত, ছবি প্রসেস করতে সমস্যা হয়েছে। এপিআই ড্যাশবোর্ড চেক করুন।");
+                console.error(error);
+            } finally {
+                processBtn.disabled = false;
+                loader.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
