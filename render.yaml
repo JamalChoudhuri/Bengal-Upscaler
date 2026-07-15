@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ai-image-processor-api
+    env: python
+    region: singapore # এশিয়ার ইউজারদের জন্য সিঙ্গাপুর সার্ভার সবচেয়ে দ্রুত কাজ করবে
+    plan: free # ফ্রি টায়ার ব্যবহার করার জন্য নির্দেশ করা হয়েছে
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.12 # Render-কে পাইথনের স্ট্যাবল ভার্সন ব্যবহার করতে বাধ্য করবে
+      - key: TORCH_HOME
+        value: /opt/render/project/src/.cache # এআই মডেল ডাউনলোডের ক্যাশ ডিরেক্টরি সেট করা
