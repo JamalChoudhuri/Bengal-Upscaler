@@ -1,129 +1,68 @@
 import io
-import torch
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from rembg import remove
 from PIL import Image
-from RealESRGAN import RealESRGAN
 
-# =====================================================================
-# ১. এপিআই অ্যাপ ইনিশিয়ালাইজেশন (FastAPI Setup)
-# =====================================================================
-# FastAPI-এর একটি ইনস্ট্যান্স তৈরি করা হচ্ছে যা আমাদের এপিআই-এর মেইন গেটওয়ে।
 app = FastAPI(
-    title="AI Image Background Remover & 4K Upscaler",
-    description="Render-এর জন্য অপ্টিমাইজড ইমেজ প্রসেসিং ব্যাকএন্ড এপিআই",
-    version="1.0"
+    title="Bengal AI Image Processor - Lightweight",
+    description="Render Free Plan-এর জন্য অপ্টিমাইজড ইমেজ প্রসেস এপিআই"
 )
 
-# =====================================================================
-# ২. এআই প্রসেস করার ডিভাইস সিলেকশন (CPU vs GPU)
-# =====================================================================
-# Render-এর ফ্রি প্ল্যানে গ্রাফিক্স কার্ড (GPU) থাকে না। 
-# তাই কোডটি স্বয়ংক্রিয়ভাবে চেক করবে GPU (cuda) আছে কিনা, না থাকলে CPU ব্যবহার করবে।
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# CORS ব্লকিং কাটানোর পারমিশন
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# =====================================================================
-# ৩. ২কে/৪কে আপস্কেলার মডেল লোড করা (মেমোরি সেভিং মোড)
-# =====================================================================
-try:
-    # scale=2 করছি যাতে Render-এর ফ্রি র‍্যামে ক্র্যাশ না করে (এটি ছবি ২ গুণ বড় করবে)
-    upscaler_model = RealESRGAN(device, scale=2)
-    upscaler_model.load_weights('weights/RealESRGAN_x2.pth', download=True)
-except Exception as e:
-    print(f"মডেল লোড হতে সমস্যা হয়েছে: {e}")
+@app.get("/")
+async def root():
+    return {"status": "Bengal AI Server is Running Perfectly!"}
 
-# =====================================================================
-# ৪. মেইন এপিআই এন্ডপয়েন্ট (POST Request)
-# =====================================================================
-# ইউজার এই '/process-image/' লিংকে ছবি এবং কাস্টম অপশন পাঠাবে।
 @app.post("/process-image/")
 async def process_image(
-    file: UploadFile = File(...),         # ইউজারের আপলোড করা মূল ছবি ফাইল
-    bg_color: str = Form("#FFFFFF"),      # সলিড ব্যাকগ্রাউন্ড কালার (ডিফল্ট সাদা)
-    output_format: str = Form("PNG")       # আউটপুট ফরম্যাট (PNG বা JPEG, ডিফল্ট PNG)
+    file: UploadFile = File(...),         
+    bg_color: str = Form("#FFFFFF"),      
+    output_format: str = Form("PNG")       
 ):
     try:
-        # -------------------------------------------------------------
-        # ধাপ ক: ফাইল রিড এবং ইমেজ মোড কনভার্ট করা
-        # -------------------------------------------------------------
-        # ইউজার যে ফাইল পাঠিয়েছে তা মেমোরিতে (Bytes) রিড করা হচ্ছে।
+        # ১. ফাইল রিড করা
         image_bytes = await file.read()
-        # Pillow (PIL) লাইব্রেরি দিয়ে বাইটস থেকে ছবি ওপেন করা হচ্ছে।
-        # '.convert("RGBA")' করা হয়েছে কারণ ব্যাকগ্রাউন্ড কাটার জন্য ছবির 'Alpha' বা ট্রান্সপারেন্ট চ্যানেল দরকার।
         input_image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
 
-        # -------------------------------------------------------------
-        # ধাপ খ: এআই দিয়ে ব্যাকগ্রাউন্ড রিমুভ করা (rembg)
-        # -------------------------------------------------------------
-        # এই ফাংশনটি ছবির মূল অবজেক্ট বাদে বাকি সব ব্যাকগ্রাউন্ড কেটে সম্পূর্ণ ট্রান্সপারেন্ট (স্বচ্ছ) করে দেয়।
+        # ২. এআই দিয়ে ব্যাকগ্রাউন্ড রিমুভ করা (rembg - মেমোরি ফ্রেন্ডলি মোড)
         transparent_image = remove(input_image)
 
-        # -------------------------------------------------------------
-        # ধাপ গ: সলিড কালার ব্যাকগ্রাউন্ড ফিট করা (Pillow)
-        # -------------------------------------------------------------
-        # ইউজারের পাঠানো Hex Code (যেমন: #FFFFFF) থেকে '#' বাদ দেওয়া হচ্ছে।
+        # ৩. সলিড কালার ব্যাকগ্রাউন্ড যোগ করা
         hex_color = bg_color.lstrip('#')
-        # Hex কোডকে RGB ফরম্যাটে রূপান্তর করা হচ্ছে (যেমন: 'FFFFFF' হয়ে যাবে (255, 255, 255))
         rgb_color = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
         
-        # ট্রান্সপারেন্ট ছবিটির ঠিক সমান সাইজের একটি নতুন সলিড কালারের ইমেজ তৈরি করা হচ্ছে।
         solid_bg = Image.new("RGBA", transparent_image.size, rgb_color + (255,))
-        # 'alpha_composite' এর কাজ হলো সলিড ব্যাকগ্রাউন্ডের ঠিক ওপরে আমাদের ট্রান্সপারেন্ট ছবিটি নিখুঁতভাবে বসিয়ে দেওয়া।
         combined_image = Image.alpha_composite(solid_bg, transparent_image)
 
-        # -------------------------------------------------------------
-    # -------------------------------------------------------------
-        # ধাপ ঘ: এআই আপস্কেলিং (Real-ESRGAN - মেমোরি সেভিং মোড)
-        # -------------------------------------------------------------
-        # আপস্কেলার মডেল প্রসেস করার জন্য ছবিকে অবশ্যই ট্রান্সপারেন্ট ছাড়া (RGB) মোডে নিতে হবে।
-        final_rgb_image = combined_image.convert("RGB")
-        
-        # ছবি প্রসেস করার ঠিক আগে পাইথনের অলস মেমোরি/ক্যাশ জোরপূর্বক খালি করা (Garbage Collection)
-        import gc
-        gc.collect()
-        if torch.cuda.is_available(): 
-            torch.cuda.empty_cache()
-        
-        # Real-ESRGAN মডেলটি এখানে ছবির পিক্সেল কোয়ালিটি বাড়িয়ে সুপার-রেজোলিউশন তৈরি করবে।
-        upscaled_image = upscaler_model.predict(final_rgb_image)
+        # ৪. লাইটওয়েট এইচডি আপস্কেলিং (Lanczos - মেমোরি ক্র্যাশ করবে না)
+        # ছবিটিকে ২ গুণ (2x) বড় এবং ক্রিস্টাল ক্লিয়ার করা হচ্ছে
+        width, height = combined_image.size
+        upscaled_image = combined_image.resize((width * 2, height * 2), Image.Resampling.LANCZOS)
 
-        # -------------------------------------------------------------
-        # ধাপ ঙ: ফরম্যাট সিলেকশন এবং মেমোরি বাফার তৈরি
-        # -------------------------------------------------------------
-        # ছবি সরাসরি হার্ডডিস্কে সেভ না করে র্যামে (RAM) প্রসেস করার জন্য io.BytesIO() বাফার নেওয়া হয়েছে।
+        # ৫. ফরম্যাট সেটআপ ও সেভ করা
         output_buffer = io.BytesIO()
-        format_str = output_format.upper() # ইউজারের টেক্সট বড় হাতের অক্ষরে নেওয়া (যেমন: png -> PNG)
+        format_str = output_format.upper()
         
-        # ইউজার ভুল ফরম্যাট দিলে ৪০০ ব্যাড রিকোয়েস্ট এরর দেখাবে
-        if format_str not in ["PNG", "JPEG", "JPG"]:
-            raise HTTPException(status_code=400, detail="ভুল ফরম্যাট! শুধু PNG বা JPEG ব্যবহার করুন।")
-        
-        # JPEG এবং JPG এর জন্য সেভ ফরম্যাট সিলেক্ট করা
-        save_format = "JPEG" if format_str in ["JPEG", "JPG"] else "PNG"
-        
-        # চূড়ান্ত ৪কে ছবিটিকে আমাদের মেমোরি বাফারে সেভ করা হচ্ছে
-        upscaled_image.save(output_buffer, format=save_format)
-        # বাফারের রিড পয়েন্টার শুরুতে (0) নিয়ে যাওয়া হচ্ছে যাতে ফাইলটি শুরু থেকে রিড করা যায়
+        if format_str in ["JPEG", "JPG"]:
+            final_image = upscaled_image.convert("RGB")
+            final_image.save(output_buffer, format="JPEG", quality=95)
+            media_type = "image/jpeg"
+        else:
+            upscaled_image.save(output_buffer, format="PNG")
+            media_type = "image/png"
+            
         output_buffer.seek(0)
-
-        # -------------------------------------------------------------
-        # ধাপ চ: ছবি ডাউনলোড রেসপন্স পাঠানো
-        # -------------------------------------------------------------
-        # ব্রাউজার বা অ্যাপকে ফাইল টাইপ (image/png অথবা image/jpeg) জানিয়ে দেওয়া হচ্ছে
-        media_type = f"image/{save_format.lower()}"
-        # StreamingResponse দিয়ে ফাইলটি ডাউনলোড লিংক বা ডাটা হিসেবে ইউজারের কাছে চলে যাবে
         return StreamingResponse(output_buffer, media_type=media_type)
 
     except Exception as e:
-        # কোডে কোনো এরর আসলে সার্ভার ক্র্যাশ না করে ইউজারের কাছে ৫০০ ইন্টারনাল এরর মেসেজ পাঠাবে
-        raise HTTPException(status_code=500, detail=f"সার্ভারে সমস্যা হয়েছে: {str(e)}")
-
-# =====================================================================
-# ৫. লোকাল সার্ভার রানার (Local Test Control)
-# =====================================================================
-# যখন আপনি নিজের পিসিতে টেস্ট করবেন, তখন এই ফাইলটি সরাসরি রান করলে সার্ভার চালু হবে।
-# Render সার্ভার তার নিজস্ব পোর্ট ব্যবহার করে, তাই আমরা এখানে ডাইনামিক হোস্টিং পোর্ট রাখছি।
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
