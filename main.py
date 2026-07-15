@@ -10,10 +10,16 @@ app = FastAPI(
     description="Render Free Plan-এর জন্য অপ্টিমাইজড ইমেজ প্রসেস এপিআই"
 )
 
-# CORS ব্লকিং কাটানোর পারমিশন
+from fastapi.middleware.cors import CORSMiddleware
+
+# CORS ব্লকিং পুরোপুরি দূর করার জন্য এই কনফিগারেশনটি ব্যবহার করুন
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://jamalchoudhuri.github.io",
+        "http://localhost",
+        "http://127.0.0.1"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
