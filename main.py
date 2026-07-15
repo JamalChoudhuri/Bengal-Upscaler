@@ -24,14 +24,12 @@ app = FastAPI(
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # =====================================================================
-# ৩. ৪কে (4K) আপস্কেলার মডেল লোড করা (Real-ESRGAN)
+# ৩. ২কে/৪কে আপস্কেলার মডেল লোড করা (মেমোরি সেভিং মোড)
 # =====================================================================
-# scale=4 মানে ছবিটি ৪ গুণ বড় হবে (যেমন: 1080p ছবি 4K হয়ে যাবে)।
-# download=True দেওয়া হয়েছে যাতে সার্ভার চালু হওয়ার সময় মডেল ফাইলটি অটোমেটিক ডাউনলোড হয়।
-# সতর্কতা: Render-এর ফ্রি র‍্যাম কম থাকায় এই লাইনটি রান হতে কিছুটা সময় নিতে পারে।
 try:
-    upscaler_model = RealESRGAN(device, scale=4)
-    upscaler_model.load_weights('weights/RealESRGAN_x4.pth', download=True)
+    # scale=2 করছি যাতে Render-এর ফ্রি র‍্যামে ক্র্যাশ না করে (এটি ছবি ২ গুণ বড় করবে)
+    upscaler_model = RealESRGAN(device, scale=2)
+    upscaler_model.load_weights('weights/RealESRGAN_x2.pth', download=True)
 except Exception as e:
     print(f"মডেল লোড হতে সমস্যা হয়েছে: {e}")
 
@@ -75,11 +73,19 @@ async def process_image(
         combined_image = Image.alpha_composite(solid_bg, transparent_image)
 
         # -------------------------------------------------------------
-        # ধাপ ঘ: এআই ৪কে আপস্কেলিং (Real-ESRGAN)
+    # -------------------------------------------------------------
+        # ধাপ ঘ: এআই আপস্কেলিং (Real-ESRGAN - মেমোরি সেভিং মোড)
         # -------------------------------------------------------------
         # আপস্কেলার মডেল প্রসেস করার জন্য ছবিকে অবশ্যই ট্রান্সপারেন্ট ছাড়া (RGB) মোডে নিতে হবে।
         final_rgb_image = combined_image.convert("RGB")
-        # Real-ESRGAN মডেলটি এখানে ছবির পিক্সেল কোয়ালিটি ৪ গুণ বাড়িয়ে সুপার-রেজোলিউশন ৪কে ছবি তৈরি করবে।
+        
+        # ছবি প্রসেস করার ঠিক আগে পাইথনের অলস মেমোরি/ক্যাশ জোরপূর্বক খালি করা (Garbage Collection)
+        import gc
+        gc.collect()
+        if torch.cuda.is_available(): 
+            torch.cuda.empty_cache()
+        
+        # Real-ESRGAN মডেলটি এখানে ছবির পিক্সেল কোয়ালিটি বাড়িয়ে সুপার-রেজোলিউশন তৈরি করবে।
         upscaled_image = upscaler_model.predict(final_rgb_image)
 
         # -------------------------------------------------------------
